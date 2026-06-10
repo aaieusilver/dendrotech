@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DendroTech — Simulador Anatômico da Madeira</title>
+  <style>
+    :root{
+      --bg:#e8e1c7;
+      --panel:#f6f0d9;
+      --ink:#2b2a24;
+      --line:#5b513d;
+      --accent:#6b2d2d;
+      --accent2:#8a6a3d;
+      --muted:#6d6758;
+      --screen:#fffdf4;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Courier New", Courier, monospace;
+      background:
+        linear-gradient(rgba(255,255,255,.14),rgba(255,255,255,.14)),
+        repeating-linear-gradient(0deg,#d9d0b4 0,#d9d0b4 2px,#e7dfc5 2px,#e7dfc5 6px);
+      color:var(--ink);
+    }
+    header{
+      background:#2d2a22;
+      color:#f4eed8;
+      border-bottom:6px double #aa8b55;
+      padding:16px 20px;
+      text-align:center;
+      letter-spacing:1px;
+    }
+    header h1{margin:0;font-size:26px}
+    header p{margin:8px 0 0;font-size:13px;color:#d8ceb2}
+    main{
+      max-width:1400px;
+      margin:18px auto;
+      padding:0 14px 24px;
+      display:grid;
+      grid-template-columns:360px 1fr;
+      gap:16px;
+    }
+    .panel{
+      background:var(--panel);
+      border:3px ridge #8f8162;
+      box-shadow:4px 4px 0 rgba(55,45,30,.18);
+      padding:12px;
+    }
+    .panel h2{
+      font-size:16px;
+      margin:0 0 10px;
+      padding:6px 8px;
+      background:#d9ceb0;
+      border:1px solid #776b50;
+    }
+    fieldset{
+      border:2px groove #8f8162;
+      margin:0 0 12px;
+      padding:10px;
+    }
+    legend{font-weight:bold;padding:0 6px}
+    label{
+      display:block;
+      font-size:13px;
+      margin:8px 0 4px;
+    }
+    select,input[type="range"],button{
+      width:100%;
+    }
+    select,button{
+      font-family:inherit;
+      background:#fffaf0;
+      border:2px outset #9b8d6f;
+      color:#2b2a24;
+      padding:7px 8px;
+    }
+    button{
+      cursor:pointer;
+      font-weight:bold;
+      margin:4px 0;
+    }
+    button:active{border-style:inset}
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:6px;
+    }
+    .mini{
+      font-size:11px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+    .value{
+      float:right;
+      font-weight:bold;
+      color:var(--accent);
+    }
+    .workspace{
+      display:grid;
+      grid-template-rows:auto auto;
+      gap:14px;
+    }
+    .screen{
+      background:var(--screen);
+      border:4px inset #8e8167;
+      padding:10px;
+      min-height:620px;
+    }
+    #canvasWrap{
+      position:relative;
+      background:#fffdf4;
+      border:1px solid #6f644d;
+      overflow:auto;
+    }
+    canvas{
+      display:block;
+      width:100%;
+      height:auto;
+      min-width:700px;
+      background:#fdf9ea;
+      cursor:crosshair;
+    }
+    .statusbar{
+      margin-top:8px;
+      padding:7px 9px;
+      border:2px inset #9b8d6f;
+      background:#eee4c7;
+      font-size:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:8px;
+    }
+    .card{
+      border:2px groove #96896e;
+      background:#f8f2df;
+      padding:9px;
+      min-height:110px;
+    }
+    .card strong{
+      display:block;
+      color:var(--accent);
+      margin-bottom:6px;
+    }
+    .tag{
+      display:inline-block;
+      border:1px solid #6c6047;
+      padding:2px 5px;
+      margin:2px 2px 0 0;
+      background:#e7dcc0;
+      font-size:10px;
+    }
+    .warning{
+      border-left:5px solid #8c4d2b;
+      background:#f5dfc8;
+      padding:8px;
+      font-size:11px;
+      line-height:1.4;
+      margin-top:8px;
+    }
+    footer{
+      text-align:center;
+      color:#5b5445;
+      font-size:11px;
+      padding:12px;
+    }
+    @media (max-width:980px){
+      main{grid-template-columns:1fr}
+      .cards{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:620px){
+      .cards{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>DENDROTECH v0.1</h1>
+  <p>Simulador didático de anatomia da madeira — protótipo HTML</p>
+</header>
+
+<main>
+  <aside class="panel">
+    <h2>1. PERFIL ANATÔMICO</h2>
+
+    <fieldset>
+      <legend>Grupo botânico</legend>
+      <label for="group">Tipo de madeira</label>
+      <select id="group">
+        <option value="hardwood">Folhosa (angiosperma)</option>
+        <option value="softwood">Conífera (gimnosperma)</option>
+      </select>
+
+      <label for="preset">Modelo de referência</label>
+      <select id="preset">
+        <option value="custom">Personalizado</option>
+        <option value="eucalipto">Eucalipto</option>
+        <option value="angelim">Angelim-pedra</option>
+        <option value="cedro">Cedro</option>
+        <option value="balsa">Pau-balsa</option>
+        <option value="araucaria">Araucária</option>
+      </select>
+    </fieldset>
+
+    <fieldset id="hardwoodControls">
+      <legend>Folhosas</legend>
+
+      <label>Quantidade de vasos <span class="value" id="vesselCountOut"></span></label>
+      <input id="vesselCount" type="range" min="0" max="36" value="14" />
+
+      <label>Diâmetro dos vasos <span class="value" id="vesselSizeOut"></span></label>
+      <input id="vesselSize" type="range" min="10" max="58" value="31" />
+
+      <label>Padrão do parênquima</label>
+      <select id="parenchyma">
+        <option value="none">Pouco evidente</option>
+        <option value="vasicentric">Vasicêntrico</option>
+        <option value="aliform">Aliforme</option>
+        <option value="confluent">Aliforme confluente</option>
+        <option value="bands">Faixas</option>
+      </select>
+    </fieldset>
+
+    <fieldset>
+      <legend>Matriz celular</legend>
+
+      <label>Densidade de fibras/traqueídes <span class="value" id="fiberDensityOut"></span></label>
+      <input id="fiberDensity" type="range" min="150" max="1200" value="650" />
+
+      <label>Espessura relativa da parede <span class="value" id="wallOut"></span></label>
+      <input id="wall" type="range" min="1" max="8" value="4" />
+
+      <label>Número de raios <span class="value" id="rayCountOut"></span></label>
+      <input id="rayCount" type="range" min="0" max="18" value="8" />
+    </fieldset>
+
+    <fieldset>
+      <legend>Inserção manual</legend>
+      <label for="tool">Ferramenta de clique</label>
+      <select id="tool">
+        <option value="inspect">Inspecionar</option>
+        <option value="vessel">Adicionar vaso</option>
+        <option value="fiber">Adicionar fibra/traqueíde</option>
+        <option value="ray">Adicionar raio</option>
+        <option value="parenchyma">Adicionar parênquima</option>
+        <option value="erase">Apagar elemento</option>
+      </select>
+      <p class="mini">Selecione uma ferramenta e clique no corte anatômico.</p>
+    </fieldset>
+
+    <div class="grid2">
+      <button id="renderBtn">GERAR CORTE</button>
+      <button id="randomBtn">ALEATÓRIO</button>
+      <button id="undoBtn">DESFAZER</button>
+      <button id="clearBtn">LIMPAR</button>
+    </div>
+    <button id="saveBtn">SALVAR IMAGEM PNG</button>
+
+    <div class="warning">
+      Protótipo educacional. As relações exibidas são qualitativas e não substituem mensuração anatômica, identificação taxonômica ou ensaios tecnológicos.
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <div class="panel screen">
+      <h2>2. CORTE TRANSVERSAL SIMULADO</h2>
+      <div id="canvasWrap">
+        <canvas id="woodCanvas" width="980" height="560"></canvas>
+      </div>
+      <div class="statusbar">
+        <span id="status">Pronto.</span>
+        <span id="coords">x: — | y: —</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>3. INTERPRETAÇÃO QUALITATIVA</h2>
+      <div class="cards">
+        <div class="card">
+          <strong>Condução hidráulica</strong>
+          <div id="hydraulicText"></div>
+        </div>
+        <div class="card">
+          <strong>Sustentação</strong>
+          <div id="supportText"></div>
+        </div>
+        <div class="card">
+          <strong>Permeabilidade</strong>
+          <div id="permeabilityText"></div>
+        </div>
+        <div class="card">
+          <strong>Uso tecnológico</strong>
+          <div id="technologyText"></div>
+        </div>
+      </div>
+      <p class="mini" style="margin-top:10px">
+        Leitura sugerida: altere uma variável por vez e observe como a anatomia simulada modifica a interpretação.
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer>DendroTech — protótipo didático desenvolvido para a disciplina de Dendrologia e Biologia da Madeira.</footer>
+
+<script>
+(() => {
+  const canvas = document.getElementById('woodCanvas');
+  const ctx = canvas.getContext('2d');
+  const state = {
+    manual: [],
+    seed: 42,
+    selected: null
+  };
+
+  const el = id => document.getElementById(id);
+  const controls = {
+    group: el('group'),
+    preset: el('preset'),
+    vesselCount: el('vesselCount'),
+    vesselSize: el('vesselSize'),
+    parenchyma: el('parenchyma'),
+    fiberDensity: el('fiberDensity'),
+    wall: el('wall'),
+    rayCount: el('rayCount'),
+    tool: el('tool')
+  };
+
+  function mulberry32(a) {
+    return function() {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+  }
+
+  function valueLabels(){
+    el('vesselCountOut').textContent = controls.vesselCount.value;
+    el('vesselSizeOut').textContent = controls.vesselSize.value;
+    el('fiberDensityOut').textContent = controls.fiberDensity.value;
+    el('wallOut').textContent = controls.wall.value;
+    el('rayCountOut').textContent = controls.rayCount.value;
+  }
+
+  function toggleControls(){
+    const isHardwood = controls.group.value === 'hardwood';
+    el('hardwoodControls').style.opacity = isHardwood ? '1' : '.45';
+    [...el('hardwoodControls').querySelectorAll('input,select')].forEach(x => x.disabled = !isHardwood);
+  }
+
+  function clearCanvas(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#f8f0d8';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+
+  function drawBorder(){
+    ctx.save();
+    ctx.strokeStyle = '#4f4738';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4,4,canvas.width-8,canvas.height-8);
+    ctx.restore();
+  }
+
+  function drawRays(rand, count){
+    ctx.save();
+    for(let i=0;i<count;i++){
+      const x = 55 + rand()*(canvas.width-110);
+      const width = 4 + rand()*9;
+      ctx.fillStyle = i % 2 ? 'rgba(168,121,74,.33)' : 'rgba(121,77,49,.30)';
+      ctx.fillRect(x, 18, width, canvas.height-36);
+      ctx.strokeStyle = 'rgba(86,55,39,.38)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, 18, width, canvas.height-36);
+    }
+    ctx.restore();
+  }
+
+  function drawFiberCell(x,y,r,wall,color='#9d5c52'){
+    ctx.save();
+    ctx.beginPath();
+    const sides = 6;
+    for(let i=0;i<sides;i++){
+      const a = Math.PI*2*i/sides + 0.2;
+      const px = x + Math.cos(a)*r*(0.86 + 0.15*Math.sin(i*2.1));
+      const py = y + Math.sin(a)*r*(0.86 + 0.12*Math.cos(i*1.7));
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#fff8df';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = wall;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawFibers(rand, count, wall, softwood=false){
+    for(let i=0;i<count;i++){
+      const x = 16 + rand()*(canvas.width-32);
+      const y = 16 + rand()*(canvas.height-32);
+      const base = softwood ? 5.2 : 3.6;
+      const r = base + rand()*(softwood?4.5:3.2);
+      drawFiberCell(x,y,r,wall, softwood ? '#9c565f' : '#8f4d46');
+    }
+  }
+
+  function vesselObjects(rand,count,size){
+    const arr=[];
+    for(let i=0;i<count;i++){
+      arr.push({
+        x: 45 + rand()*(canvas.width-90),
+        y: 40 + rand()*(canvas.height-80),
+        r: size*(0.65 + rand()*0.75)
+      });
+    }
+    return arr;
+  }
+
+  function drawParenchyma(vessels,type){
+    ctx.save();
+    ctx.strokeStyle='rgba(187,143,72,.80)';
+    ctx.fillStyle='rgba(226,191,108,.36)';
+    ctx.lineWidth=4;
+
+    if(type==='bands'){
+      for(let y=80;y<canvas.height;y+=115){
+        ctx.fillRect(8,y,canvas.width-16,18);
+        ctx.strokeRect(8,y,canvas.width-16,18);
+      }
+      ctx.restore(); return;
+    }
+
+    for(const v of vessels){
+      if(type==='none') continue;
+      if(type==='vasicentric'){
+        ctx.beginPath();
+        ctx.ellipse(v.x,v.y,v.r*1.28,v.r*1.18,0,0,Math.PI*2);
+        ctx.fill(); ctx.stroke();
+      }
+      if(type==='aliform' || type==='confluent'){
+        ctx.beginPath();
+        ctx.ellipse(v.x,v.y,v.r*1.3,v.r*1.12,0,0,Math.PI*2);
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(v.x-v.r*2.0,v.y);
+        ctx.quadraticCurveTo(v.x-v.r*1.3,v.y-v.r*.55,v.x-v.r*.7,v.y);
+        ctx.quadraticCurveTo(v.x-v.r*1.3,v.y+v.r*.55,v.x-v.r*2.0,v.y);
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(v.x+v.r*2.0,v.y);
+        ctx.quadraticCurveTo(v.x+v.r*1.3,v.y-v.r*.55,v.x+v.r*.7,v.y);
+        ctx.quadraticCurveTo(v.x+v.r*1.3,v.y+v.r*.55,v.x+v.r*2.0,v.y);
+        ctx.fill(); ctx.stroke();
+      }
+    }
+
+    if(type==='confluent'){
+      ctx.lineWidth=13;
+      ctx.strokeStyle='rgba(226,191,108,.48)';
+      const sorted=[...vessels].sort((a,b)=>a.y-b.y);
+      for(let i=1;i<sorted.length;i++){
+        const a=sorted[i-1], b=sorted[i];
+        if(Math.abs(a.y-b.y)<75 && Math.abs(a.x-b.x)<210){
+          ctx.beginPath();
+          ctx.moveTo(a.x,a.y);
+          ctx.lineTo(b.x,b.y);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawVessels(vessels){
+    for(const v of vessels){
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(v.x,v.y,v.r,0,Math.PI*2);
+      ctx.fillStyle='#fffdf1';
+      ctx.fill();
+      ctx.strokeStyle='#6f3d36';
+      ctx.lineWidth=5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(v.x,v.y,v.r*0.72,0,Math.PI*2);
+      ctx.strokeStyle='rgba(164,83,67,.38)';
+      ctx.lineWidth=2;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawSoftwood(rand){
+    clearCanvas();
+    drawFibers(rand, +controls.fiberDensity.value, +controls.wall.value, true);
+    drawRays(rand, +controls.rayCount.value);
+    drawManual();
+    drawBorder();
+  }
+
+  function drawHardwood(rand){
+    clearCanvas();
+    drawFibers(rand, +controls.fiberDensity.value, +controls.wall.value, false);
+    const vessels = vesselObjects(rand,+controls.vesselCount.value,+controls.vesselSize.value);
+    drawParenchyma(vessels,controls.parenchyma.value);
+    drawVessels(vessels);
+    drawRays(rand,+controls.rayCount.value);
+    drawManual();
+    drawBorder();
+  }
+
+  function drawManual(){
+    for(const o of state.manual){
+      if(o.type==='vessel'){
+        drawParenchyma([o],controls.parenchyma.value);
+        drawVessels([o]);
+      } else if(o.type==='fiber'){
+        drawFiberCell(o.x,o.y,o.r,+controls.wall.value,'#6f3d36');
+      } else if(o.type==='ray'){
+        ctx.fillStyle='rgba(108,72,45,.38)';
+        ctx.fillRect(o.x-4,0,8,canvas.height);
+      } else if(o.type==='parenchyma'){
+        ctx.beginPath();
+        ctx.arc(o.x,o.y,o.r,0,Math.PI*2);
+        ctx.fillStyle='rgba(226,191,108,.55)';
+        ctx.fill();
+        ctx.strokeStyle='rgba(149,105,45,.8)';
+        ctx.lineWidth=2;
+        ctx.stroke();
+      }
+    }
+  }
+
+  function interpretation(){
+    const soft=controls.group.value==='softwood';
+    const vessels=+controls.vesselCount.value;
+    const size=+controls.vesselSize.value;
+    const density=+controls.fiberDensity.value;
+    const wall=+controls.wall.value;
+    const par=controls.parenchyma.value;
+
+    if(soft){
+      el('hydraulicText').innerHTML =
+        'Condução distribuída por numerosas traqueídes e pontoações. <span class="tag">sem vasos</span>';
+      el('supportText').innerHTML =
+        wall>=5 ? 'Paredes relativamente espessas sugerem maior participação mecânica.' :
+        'Traqueídes acumulam funções de condução e sustentação.';
+      el('permeabilityText').innerHTML =
+        'Tende a depender da conectividade entre traqueídes e pontoações.';
+      el('technologyText').innerHTML =
+        'Estrutura homogênea, útil para comparar coníferas com folhosas.';
+      return;
+    }
+
+    const h = vessels*size;
+    el('hydraulicText').textContent =
+      h>900 ? 'Potencial elevado de condução, com vasos numerosos e/ou amplos.' :
+      h>400 ? 'Potencial intermediário de condução.' :
+      'Potencial de condução mais distribuído ou restrito.';
+
+    el('supportText').textContent =
+      wall>=6 && density>700 ? 'Matriz fibrosa compacta; tendência a maior rigidez e resistência.' :
+      wall>=4 ? 'Sustentação intermediária, dependente da proporção de fibras.' :
+      'Paredes delgadas; tendência a menor massa de parede por volume.';
+
+    el('permeabilityText').textContent =
+      par==='confluent' || par==='aliform'
+      ? 'Vasos associados a parênquima evidente; a presença de conteúdos pode reduzir o fluxo.'
+      : vessels>22 ? 'Rede vascular numerosa; tendência qualitativa de maior permeabilidade longitudinal.'
+      : 'Permeabilidade potencialmente moderada, sujeita a pontoações, tilos e depósitos.';
+
+    let tech=[];
+    if(wall>=6) tech.push('madeira estrutural');
+    if(wall<=3) tech.push('material leve');
+    if(vessels>20) tech.push('secagem/impregnação');
+    if(par==='confluent') tech.push('identificação por parênquima');
+    if(size>42) tech.push('textura vascular evidente');
+    if(!tech.length) tech.push('uso múltiplo');
+    el('technologyText').innerHTML = tech.map(t=>`<span class="tag">${t}</span>`).join('');
+  }
+
+  function render(){
+    valueLabels();
+    toggleControls();
+    const rand=mulberry32(state.seed);
+    if(controls.group.value==='softwood') drawSoftwood(rand);
+    else drawHardwood(rand);
+    interpretation();
+    el('status').textContent='Corte anatômico atualizado.';
+  }
+
+  const presets={
+    eucalipto:{group:'hardwood',vesselCount:14,vesselSize:32,parenchyma:'vasicentric',fiberDensity:720,wall:4,rayCount:8},
+    angelim:{group:'hardwood',vesselCount:18,vesselSize:28,parenchyma:'confluent',fiberDensity:930,wall:7,rayCount:7},
+    cedro:{group:'hardwood',vesselCount:16,vesselSize:27,parenchyma:'bands',fiberDensity:540,wall:3,rayCount:8},
+    balsa:{group:'hardwood',vesselCount:17,vesselSize:45,parenchyma:'vasicentric',fiberDensity:260,wall:1,rayCount:10},
+    araucaria:{group:'softwood',vesselCount:0,vesselSize:20,parenchyma:'none',fiberDensity:900,wall:4,rayCount:9}
+  };
+
+  controls.preset.addEventListener('change',()=>{
+    const p=presets[controls.preset.value];
+    if(!p) return;
+    Object.entries(p).forEach(([k,v])=>{
+      if(controls[k]) controls[k].value=v;
+    });
+    state.manual=[];
+    state.seed=Math.floor(Math.random()*100000);
+    render();
+  });
+
+  Object.values(controls).forEach(c=>{
+    c.addEventListener('input',()=>{
+      if(c!==controls.preset) controls.preset.value='custom';
+      render();
+    });
+  });
+
+  el('renderBtn').addEventListener('click',()=>{
+    state.seed=Math.floor(Math.random()*100000);
+    render();
+  });
+
+  el('randomBtn').addEventListener('click',()=>{
+    controls.preset.value='custom';
+    controls.group.value=Math.random()>.25?'hardwood':'softwood';
+    controls.vesselCount.value=Math.floor(Math.random()*30)+3;
+    controls.vesselSize.value=Math.floor(Math.random()*42)+12;
+    controls.fiberDensity.value=Math.floor(Math.random()*850)+250;
+    controls.wall.value=Math.floor(Math.random()*7)+1;
+    controls.rayCount.value=Math.floor(Math.random()*14)+3;
+    const pars=['none','vasicentric','aliform','confluent','bands'];
+    controls.parenchyma.value=pars[Math.floor(Math.random()*pars.length)];
+    state.manual=[];
+    state.seed=Math.floor(Math.random()*100000);
+    render();
+  });
+
+  el('undoBtn').addEventListener('click',()=>{
+    state.manual.pop();
+    render();
+  });
+
+  el('clearBtn').addEventListener('click',()=>{
+    state.manual=[];
+    controls.preset.value='custom';
+    controls.vesselCount.value=0;
+    controls.fiberDensity.value=150;
+    controls.rayCount.value=0;
+    state.seed=1;
+    render();
+  });
+
+  el('saveBtn').addEventListener('click',()=>{
+    const a=document.createElement('a');
+    a.download='dendrotech_corte_anatomico.png';
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+  });
+
+  canvas.addEventListener('mousemove',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const x=Math.round((e.clientX-rect.left)*canvas.width/rect.width);
+    const y=Math.round((e.clientY-rect.top)*canvas.height/rect.height);
+    el('coords').textContent=`x: ${x} | y: ${y}`;
+  });
+
+  canvas.addEventListener('mouseleave',()=>{
+    el('coords').textContent='x: — | y: —';
+  });
+
+  canvas.addEventListener('click',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const x=(e.clientX-rect.left)*canvas.width/rect.width;
+    const y=(e.clientY-rect.top)*canvas.height/rect.height;
+    const tool=controls.tool.value;
+
+    if(tool==='inspect'){
+      el('status').textContent=`Ponto inspecionado em (${Math.round(x)}, ${Math.round(y)}).`;
+      return;
+    }
+
+    if(tool==='erase'){
+      let best=-1,dist=Infinity;
+      state.manual.forEach((o,i)=>{
+        const d=Math.hypot(o.x-x,o.y-y);
+        if(d<dist){dist=d;best=i}
+      });
+      if(best>=0 && dist<60) state.manual.splice(best,1);
+      render();
+      return;
+    }
+
+    const obj={type:tool,x,y};
+    if(tool==='vessel') obj.r=+controls.vesselSize.value;
+    if(tool==='fiber') obj.r=7;
+    if(tool==='parenchyma') obj.r=24;
+    state.manual.push(obj);
+    render();
+    el('status').textContent=`Elemento "${tool}" adicionado.`;
+  });
+
+  valueLabels();
+  toggleControls();
+  render();
+})();
+</script>
+</body>
+</html>
